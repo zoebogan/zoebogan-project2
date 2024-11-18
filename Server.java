@@ -5,14 +5,23 @@ import java.util.concurrent.*;
 import java.util.*;
 
 public class Server {
-   
-
+    private ServerSocket sock;
+    private ArrayList<LocalDateTime> connectionTimes; 
     public Server(int port) throws IOException {
-        
+        sock = new ServerSocket(port);
+        connectionTimes = new ArrayList<>();
     }
 
     public void serve(int activeClients) {
-       
+        try {
+            for (int i = 0; i < activeClients; i++) {
+                Socket clientSocket = sock.accept();
+                ClientHandler client = new ClientHandler(clientSocket);
+                client.start();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     private class ClientHandler extends Thread {
@@ -28,14 +37,26 @@ public class Server {
     }
     
     public ArrayList<LocalDateTime> getConnectedTimes() {
-    
-    }
-   
-    public String factorize(int number) {
-  
+        return connectionTimes;
     }
 
+    public String factorize(int number) {
+        int count = 0;
+        for (int i = 1; i <= number; i++) {
+            if (number % i == 0) {
+                count++;
+            }
+        }
+        return "The number " + number + " has " + count + " factors";
+    }
+    
     public void disconnect() {
- 
+        try {
+            sock.close();
+            System.out.println("Server stopped");
+        } catch (IOException e) {
+            System.err.println("Error stopping server");
+            e.printStackTrace();
+        }
     }
 }
