@@ -7,6 +7,7 @@ import java.util.*;
 public class Server {
     private ServerSocket sock;
     private ArrayList<LocalDateTime> connectionTimes; 
+    
     public Server(int port) throws IOException {
         sock = new ServerSocket(port);
         connectionTimes = new ArrayList<>();
@@ -25,14 +26,37 @@ public class Server {
     }
 
     private class ClientHandler extends Thread {
+        private Socket sock;
+        private PrintWriter outgoing;
+        private BufferedReader incoming;
         
-
         public ClientHandler(Socket sock) {
-           
+            this.sock = sock;
         }
-
-        public void run() {
         
+        public void run() {
+            try {
+                outgoing = new PrintWriter(sock.getOutputStream(), true);
+                incoming = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                String passcode = incoming.readLine();
+                if (passcode.equals("12345")) {
+                    connectionTimes.add(LocalDateTime.now());
+                    String message = incoming.readLine();
+                    
+                    try {
+                        int number = Integer.parseInt(message);
+                        String response = factorize(number);
+                        outgoing.println(response);
+                    } catch (NumberFormatException e) {
+                        outgoing.println("There was an exception on the server");
+                    }
+                } else {
+                    outgoing.println("couldn't handshake");
+                }
+                sock.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
     
@@ -49,7 +73,7 @@ public class Server {
         }
         return "The number " + number + " has " + count + " factors";
     }
-    
+
     public void disconnect() {
         try {
             sock.close();
